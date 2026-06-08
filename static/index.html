@@ -328,8 +328,8 @@
                             alert("Enter name!")
                             return
                         }
-                        
-                        const res = await fetch('http://127.0.0.1:8000/create-room', {
+
+                        const res = await fetch('/create-room', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -356,7 +356,7 @@
                             return
                         }
 
-                        const res = await fetch('http://127.0.0.1:8000/join-room', {
+                        const res = await fetch('/join-room', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -420,7 +420,8 @@
                     }
 
                     function connectWebSocket() {
-                        ws.value = new WebSocket(`ws://127.0.0.1:8000/ws/${roomId.value}/${playerName.value}`)
+                        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+                        ws.value = new WebSocket(`${protocol}//${window.location.host}/ws/${roomId.value}/${playerName.value}`)
                         
                         // an event listener, this block is ran whenever server sends something
                         ws.value.onmessage = (event) => {
