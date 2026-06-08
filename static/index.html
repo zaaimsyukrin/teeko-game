@@ -2,16 +2,221 @@
 <html>
     <head>
         <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <style>
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                background-color: #1a1a2e;
+                color: #e0e0e0;
+                font-family: 'Segoe UI', sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                padding: 40px 20px;
+            }
+
+            #app {
+                width: 100%;
+                max-width: 500px;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+                color: #e94560;
+                margin-bottom: 24px;
+                letter-spacing: 4px;
+                text-transform: uppercase;
+            }
+
+            input {
+                width: 100%;
+                padding: 10px 14px;
+                margin: 8px 0;
+                background: #16213e;
+                border: 1px solid #0f3460;
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 1rem;
+            }
+
+            button {
+                padding: 10px 20px;
+                margin: 6px 4px;
+                background: #e94560;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 1rem;
+            }
+
+            button:hover {
+                background: #c73652;
+            }
+
+            details {
+                margin: 16px 0;
+                background: #16213e;
+                padding: 12px;
+                border-radius: 6px;
+                border: 1px solid #0f3460;
+            }
+
+            .radio-group {
+                display: flex;
+                gap: 20px;
+                margin: 12px 0;
+            }
+
+            .radio-group label {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                cursor: pointer;
+                font-size: 1rem;
+            }
+
+            .radio-group input[type="radio"] {
+                width: 18px;
+                height: 18px;
+                accent-color: #e94560;
+                margin: 0;
+            }
+
+            .board-row {
+                display: flex;
+            }
+
+            .board-row button {
+                width: 60px;
+                height: 60px;
+                background: #16213e;
+                border: 2px solid #0f3460;
+                border-radius: 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+                margin: 2px;
+            }
+
+            .piece-empty {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                background: #0f3460;
+            }
+
+            .piece-black {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                background: #e0e0e0;
+            }
+
+            .piece-red {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                background: #e94560;
+            }
+
+            details {
+                margin: 16px 0;
+                background: #16213e;
+                padding: 12px 16px;
+                border-radius: 6px;
+                border: 1px solid #0f3460;
+            }
+
+            details p {
+                margin-top: 10px;
+                line-height: 1.6;
+                color: #a0a0b0;
+                padding-left: 8px;
+                border-left: 3px solid #e94560;
+            }
+
+            details b {
+                color: #e0e0e0;
+            }
+
+            summary {
+                cursor: pointer;
+                color: #e94560;
+                font-weight: bold;
+                font-size: 1rem;
+                list-style: none;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            summary::before {
+                content: '▶';
+                font-size: 0.7rem;
+                transition: transform 0.2s;
+            }
+
+            details[open] summary::before {
+                transform: rotate(90deg);
+            }
+
+            .chat-box {
+                display: flex;
+                flex-direction: column;
+                height: 320px;
+                width: 320px;
+                background: #16213e;
+                border: 1px solid #0f3460;
+                border-radius: 6px;
+                overflow: hidden;
+            }
+
+            .chat-messages {
+                flex: 1;
+                overflow-y: auto;
+                padding: 10px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .chat-input-row {
+                display: flex;
+                gap: 0;
+                border-top: 1px solid #0f3460;
+            }
+
+            .chat-input-row input {
+                flex: 1;
+                margin: 0;
+                border: none;
+                border-radius: 0;
+            }
+
+            .chat-input-row button {
+                margin: 0;
+                border-radius: 0;
+                white-space: nowrap;
+            }
+        </style>
     </head>
     <body>
         <div id="app">
             <!-- LOBBY SCREEN -->
+             
             <div v-if="screen === 'lobby'">
                 <h1>Teeko</h1>
 
                 <input v-model="playerName" placeholder="Your name" />
 
-                <div>
+                <div class="radio-group">
                     <label>
                         <input type="radio" v-model="gameMode" value="multiplayer" /> Multiplayer
                     </label>
@@ -37,15 +242,59 @@
 
             <!-- GAME SCREEN -->
             <div v-if="screen === 'game'">
-                <div v-for="(row, i) in board" :key="i">
-                    <button 
-                        v-for="(cell, j) in row" 
-                        :key="j"
-                        @click="handleClick(i, j)">
-                        {{ cell === 'b' ? '⚫' : cell === 'r' ? '🔴' : '⬜' }}
-                    </button>
+                <div style="display: flex; gap: 20px; align-items: flex-start;">
+
+                    <div>
+                        <!-- BOARD -->
+                        <div v-for="(row, i) in board" :key="i" class="board-row">
+                            <button 
+                                v-for="(cell, j) in row" 
+                                :key="j"
+                                @click="handleClick(i, j)">
+                                <span :class="cell === 'b' ? 'piece-black' : cell === 'r' ? 'piece-red' : 'piece-empty'"></span>
+                            </button>
+                        </div>
+                        <div>
+                        <!-- turn indicator -->
+                            <p v-if="!gameOver" style="margin-top: 12px;">
+                                {{ currentTurn === myPiece ? 'Your turn' : 'Waiting for opponent...' }}
+                            </p>
+
+                            <!-- if opponent left -->
+                            <h3 v-if="opponentLeft" style="margin-top: 12px;">Your opponent left the game.</h3>
+                        </div>
+                    </div>
+
+                    <div>
+                        <!-- CHATBOX -->
+                        <div v-if="gameMode === 'multiplayer'" class="chat-box">
+                            <div class="chat-messages">
+                                <div v-for="(msg, i) in chat" :key="i">
+                                    <b>{{ msg.player }}</b>: {{ msg.text }}
+                                </div>
+                            </div>
+                            <div class="chat-input-row">
+                                <input v-model="chatInput" placeholder="Type a message..." @keyup.enter="sendChat"/>
+                                <button @click="sendChat">Send</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- game over -->
+                <div v-if="gameOver" style="margin-top: 12px;">
+                    <h2>{{ winner === playerName ? '🎉 You won!' : '😔 You lost!' }}</h2>
+                </div>
+
+                
             </div>
+
+            <details>
+                <summary>How to Play</summary>
+                <p>Get 4 of your pieces in a row — horizontally, vertically, diagonally, or in a 2x2 square. Just like in tic-tac-toe!</p>
+                <p><b>Drop Phase:</b> Take turns placing pieces until all 8 are on the board.</p>
+                <p><b>Move Phase:</b> Move one piece to an adjacent square each turn.</p>
+            </details>
         </div>
 
         <script>
@@ -64,9 +313,22 @@
                         [' ',' ',' ',' ',' '],
                         [' ',' ',' ',' ',' ']])
                     const myPiece = ref('')
+                    const ws = ref(null)
+                    const selected = ref(null)  // stores [i, j] of selected piece (durign move phase)
+                    const pieceCount = ref(0)
+                    const gameOver = ref(false)
+                    const winner = ref(null)
+                    const currentTurn = ref('b')
+                    const chat = ref([])
+                    const chatInput = ref('')
+                    const opponentLeft = ref(false)
 
                     async function createRoom() {
-                        if (!playerName.value) return  // don't proceed if no name
+                        if (!playerName.value){
+                            alert("Enter name!")
+                            return
+                        }
+                        
                         const res = await fetch('http://127.0.0.1:8000/create-room', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -79,10 +341,21 @@
                         roomId.value = data.room_id
                         screen.value = gameMode.value === 'ai' ? 'game' : 'waiting'
                         myPiece.value = data.piece
+
+                        connectWebSocket()
                     }
 
                     async function joinRoom(){
-                        if (!playerName.value) return  // don't proceed if no name
+                        if (!playerName.value){
+                            alert("Enter name!")
+                            return
+                        }
+                            
+                        if (!roomId.value){
+                            alert("Enter room code to join!")
+                            return
+                        }
+
                         const res = await fetch('http://127.0.0.1:8000/join-room', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -91,20 +364,103 @@
                                 player_id: playerName.value,
                             })
                         })
+
+                        // eg. when room code is invalid
+                        if (!res.ok) {
+                            const err = await res.json()
+                            alert(err.detail)
+                            return
+                        }
+
                         const data = await res.json()
                         roomId.value = data.room_id
                         screen.value = 'game'
                         myPiece.value = data.piece
-
+                        
+                        connectWebSocket()
                     }
 
                     function handleClick(i, j) {
-                        console.log('clicked', i, j)
+                        if (!ws.value) return
+
+                        const cell = board.value[i][j]
+
+                        // drop phase (first 8 pieces)
+                        if(pieceCount.value < 8){
+                            // we send data to ws
+                            ws.value.send(JSON.stringify({
+                                type: 'move',
+                                dest: [i, j],
+                                src: null
+                            }))
+                        
+                        } else{ // move phase
+                            if(selected.value == null){ // select piece
+                                selected.value = [i,j]
+                            }
+                            else{ // drop piece
+                                ws.value.send(JSON.stringify({
+                                    type: 'move',
+                                    dest: [i, j],
+                                    src: selected.value
+                                }))
+                                selected.value = null
+                            }
+                        }
+
                     }
 
-                    return { screen, playerName, gameMode, roomId, board, myPiece, createRoom, joinRoom, handleClick}
+                    function sendChat() {
+                        if (!chatInput.value.trim()) return
+                        ws.value.send(JSON.stringify({
+                            type: 'chat',
+                            text: chatInput.value
+                        }))
+                        chatInput.value = ''
+                    }
 
-                }
+                    function connectWebSocket() {
+                        ws.value = new WebSocket(`ws://127.0.0.1:8000/ws/${roomId.value}/${playerName.value}`)
+                        
+                        // an event listener, this block is ran whenever server sends something
+                        ws.value.onmessage = (event) => {
+                            const msg = JSON.parse(event.data)
+                            
+                            // -- if message is state update, we update the board 
+                            if (msg.type === 'state') {
+                                board.value = msg.data.board
+                                pieceCount.value = msg.data.piece_count
+                                gameOver.value = msg.data.game_over
+                                winner.value = msg.data.winner
+                                currentTurn.value = msg.data.current_turn
+
+                                // switch to game screen when opponent joins
+                                if (msg.data.mode === 'playing' && screen.value === 'waiting') {
+                                    screen.value = 'game'
+                                }
+                            }
+
+                            // -- if message is chat update, we update chatbox
+                            if (msg.type === 'chat') {
+                                chat.value.push(msg.data)
+                            }
+
+                            // -- if message is player_left, we end the game
+                            if (msg.type === 'player_left') {
+                                if (!gameOver.value) {  // only trigger if game wasn't already finished
+                                    opponentLeft.value = true
+                                    gameOver.value = true
+                                    winner.value = playerName.value
+                                }
+                            }
+                        }
+                    }
+
+                    return { screen, playerName, gameMode, roomId, board, myPiece, ws,
+                        selected, pieceCount, gameOver, winner, currentTurn, chat, chatInput, opponentLeft,
+                        connectWebSocket, createRoom, joinRoom, handleClick, sendChat}
+
+                }  
             }).mount('#app')
         </script>
     </body>

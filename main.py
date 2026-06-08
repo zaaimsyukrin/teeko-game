@@ -133,7 +133,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, player_id: str)
     
     # store this player's connection
     room.connections[player_id] = websocket
-    await websocket.send_text(json.dumps({"type": "state", "data": state_dict(room)}))
+    await broadcast(room, {"type": "state", "data": state_dict(room)})
     
     try:
         while True:
@@ -142,6 +142,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, player_id: str)
             mtype = msg.get("type")
             
             if mtype == "move":
+                if room.game_over:
+                    continue
                 dest = msg.get("dest")  # [row, col]
                 src = msg.get("src")    # [row, col] or None in drop phase
                 
@@ -150,13 +152,18 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, player_id: str)
                 if room.current_turn != my_piece:
                     continue
 
+                # validate destination is empty
+                if room.board[dest[0]][dest[1]] != ' ':
+                    continue
+
                 # update board
                 room.board[dest[0]][dest[1]] = my_piece
                 if src:
                     room.board[src[0]][src[1]] = ' '
                 
                 # after move
-                room.piece_count += 1
+                if room.piece_count < 8:
+                    room.piece_count += 1
 
                 # check win condition
                 check_winner(room)
@@ -175,6 +182,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, player_id: str)
                     # drop phase
                     if len(move) == 1:
                         room.board[move[0][0]][move[0][1]] = 'r'
+
                     # all-pieces-on-board phase
                     elif len(move) == 2:
                         dst = move[0]
@@ -183,7 +191,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, player_id: str)
                         room.board[src[0]][src[1]] = ' '
 
                     # after move
-                    room.piece_count += 1
+                    if room.piece_count < 8:
+                        room.piece_count += 1
 
                     # check win condition
                     check_winner(room)
@@ -202,4 +211,6 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, player_id: str)
     
     except WebSocketDisconnect:
         room.connections.pop(player_id, None)
+        await broadcast(room, {"type": "player_left", "player_id": player_id})
+
 
