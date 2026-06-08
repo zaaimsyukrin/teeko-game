@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    </head>
+    <body>
+        <div id="app">
+            <!-- LOBBY SCREEN -->
+            <div v-if="screen === 'lobby'">
+                <h1>Teeko</h1>
+
+                <input v-model="playerName" placeholder="Your name" />
+
+                <div>
+                    <label>
+                        <input type="radio" v-model="gameMode" value="multiplayer" /> Multiplayer
+                    </label>
+                    <label>
+                        <input type="radio" v-model="gameMode" value="ai" /> vs AI
+                    </label>
+                </div>
+
+                <!-- only show room code input if multiplayer -->
+                <div v-if="gameMode === 'multiplayer'">
+                    <input v-model="roomId" placeholder="Room code (leave empty to create)" />
+                </div>
+
+                <button @click="createRoom">Create Room</button>
+                <button @click="joinRoom" v-if="gameMode === 'multiplayer'">Join Room</button>
+            </div>
+
+            <!-- WAITING SCREEN -->
+            <div v-if="screen === 'waiting'">
+                <h2>Waiting for opponent...</h2>
+                <p>Share this code: {{ roomId }}</p>
+            </div>
+
+            <!-- GAME SCREEN -->
+            <div v-if="screen === 'game'">
+                <div v-for="(row, i) in board" :key="i">
+                    <button 
+                        v-for="(cell, j) in row" 
+                        :key="j"
+                        @click="handleClick(i, j)">
+                        {{ cell === 'b' ? '⚫' : cell === 'r' ? '🔴' : '⬜' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const { createApp, ref } = Vue
+
+            createApp({
+                setup() {
+                    // add your refs here
+                    const screen = ref('lobby')
+                    const playerName = ref('')
+                    const gameMode = ref('multiplayer')
+                    const roomId = ref('')
+                    const board = ref([[' ',' ',' ',' ',' '],
+                        [' ',' ',' ',' ',' '],
+                        [' ',' ',' ',' ',' '],
+                        [' ',' ',' ',' ',' '],
+                        [' ',' ',' ',' ',' ']])
+                    const myPiece = ref('')
+
+                    async function createRoom() {
+                        if (!playerName.value) return  // don't proceed if no name
+                        const res = await fetch('http://127.0.0.1:8000/create-room', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                player_id: playerName.value,
+                                game_type: gameMode.value
+                            })
+                        })
+                        const data = await res.json()
+                        roomId.value = data.room_id
+                        screen.value = gameMode.value === 'ai' ? 'game' : 'waiting'
+                        myPiece.value = data.piece
+                    }
+
+                    async function joinRoom(){
+                        if (!playerName.value) return  // don't proceed if no name
+                        const res = await fetch('http://127.0.0.1:8000/join-room', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                room_id: roomId.value,
+                                player_id: playerName.value,
+                            })
+                        })
+                        const data = await res.json()
+                        roomId.value = data.room_id
+                        screen.value = 'game'
+                        myPiece.value = data.piece
+
+                    }
+
+                    function handleClick(i, j) {
+                        console.log('clicked', i, j)
+                    }
+
+                    return { screen, playerName, gameMode, roomId, board, myPiece, createRoom, joinRoom, handleClick}
+
+                }
+            }).mount('#app')
+        </script>
+    </body>
+</html>
